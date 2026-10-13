@@ -1,0 +1,155 @@
+# openJY 唯一权威非敏感默认配置（Phase 1 起）
+#
+# 优先级：环境变量 AYHMJ_<SECTION>__<KEY> > 本文件。
+# Phase 14：config/pipeline.yaml 已删除，本文件是唯一权威来源，不再有兜底。
+# 任何"本机才存在"的绝对路径都不允许写进业务代码；只能用下面的可配置项 + 环境变量覆盖。
+# 敏感值（API key / token）一律不进本文件，见 .env.example 与 lib/secrets.py。
+
+product:
+  name: "来华就医服务（turismo médico a China）"
+  brand: "China Medical Journey"
+  slogan: "Atención de primer nivel, en China"
+  keywords: ["turismo médico china", "cirugía en china", "implantes dentales china",
+             "tratamiento en china", "viaje médico china"]
+  assets_dir: "assets/products"
+
+script:
+  # 出片台词语言：zh=中文 / en=英文 / es=西语（项目已转向西语区，用 es）
+  language: "es"
+
+paths:
+  # 全部相对于仓库根（ROOT 由 lib/settings.py 从仓库自身解析，不写死盘符）
+  state_dir: "state"
+  out_dir: "out"
+  logs_dir: "logs"
+  assets_dir: "assets"
+  config_dir: "config"
+  # 外部工具：留空 = 自动探测（环境变量 → PATH → 常见位置）；填绝对路径则强制使用
+  ffmpeg: ""
+  ffprobe: ""
+  # 字幕字体目录（libass fontsdir）；留空 = 自动在 assets/fonts 下找
+  fonts_dir: ""
+  # Python 解释器（默认用当前解释器；转写等重依赖可指向另一个解释器）
+  # 仓库自带 .venv 未装 faster-whisper；转写（lib/post/transcript）指向已装 faster-whisper 的
+  # 解释器。换机器时改这里，或设 AYHMJ_PATHS__PYTHON 覆盖。
+  python: "D:/@kaifa/aiyouhu/.venv/Scripts/python.exe"
+  # PostFlow CLI（国内发布）根目录；留空 = <root>/vendor/postflow
+  postflow_dir: ""
+  # 成片同步的桌面目录；留空 = <用户桌面>/openJY
+  desktop_dir: ""
+  # BGM 素材库；留空 = <root>/assets/bgm_trending
+  bgm_lib: ""
+  # 旧式 API key 文本文件（可选兼容，非必需）
+  keyfile: ""
+  # 历史遗留的 key 文件（可选兼容：不存在就静默跳过，绝不是运行必需条件）
+  # Phase 14 清理：本机不存在的路径已删除，只保留下面这一个**仍在用**的例外。
+  # 换机器时请改这里（或设 AYHMJ_KEYFILE 指向单个 key 文件），不要把它写进业务代码。
+  legacy_keyfiles:
+    - "D:/BaiduSyncdisk/2 @AI编程/Api Key/爱优护api.txt"
+  # dotenv 风格 KEY=VALUE 文件（相对仓库根；不存在即跳过）
+  dotenv_files:
+    - "state/ark.env"
+
+llm:
+  provider: "deepseek"
+  base_url: "https://api.deepseek.com"
+  model: "deepseek-flash"
+  timeout_seconds: 120
+
+generate:
+  # H3 / AutoDL 付费出片路径已删除（2026-10-13）：provider / base_url / default_workflow /
+  # resolution / quality / poll_interval_seconds / max_wait_minutes 字段一并移除。
+  # 本段现仅保留文案侧仍需要的时长与提示词长度预算。
+  duration: 15
+  prompt_max_chars: 10000
+  prompt_safe_chars: 9800
+
+asr:
+  # 本地转写（faster-whisper）；未安装时 health check 报 DEGRADED
+  backend: "faster-whisper"
+  model: "medium"
+  draft_model: "small"
+  device: "cpu"
+  compute_type: "int8"
+  language: "es"
+
+trend:
+  platforms: ["tiktok", "youtube"]
+  keywords: ["turismo médico china", "cirugía en china", "implantes dentales china",
+             "tratamiento médico china", "venir a china a tratamiento"]
+  competitor_accounts: []
+  pages_per_keyword: 3
+  min_likes: 1000
+
+storyboard:
+  shots_count: {min: 4, max: 6}
+  shot_duration: {min: 2, max: 5}
+  product_shots: 0
+
+compose:
+  subtitle:
+    # 英文可显示字体（系统已装 Noto Sans SC，含拉丁字形）；不再用中文「文悦新青年体」
+    font: "Noto Sans SC"
+    font_size: 13
+    color: "white"
+    outline_color: "black"
+    outline_width: 1.0
+    bottom_ratio: 0.25
+    max_chars_per_line: 24
+  output:
+    resolution: "1080x1920"
+    fps: 30
+    codec: "libx264"
+    preset: "veryfast"
+    crf: 23
+
+publish:
+  domestic:
+    enabled: true
+    account_name: "ayh-main"
+    platforms: ["douyin", "xiaohongshu", "shipinhao"]
+  overseas:
+    enabled: true
+    # 待宝哥提供 Upload-Post 后台子账号名；留空 = 未配置（发布前会明确报错，不发错号）
+    profile: ""
+    platforms: ["tiktok", "youtube", "instagram", "facebook", "telegram", "x"]
+  daily_limit: 6
+  min_interval_minutes: 30
+  inter_platform_gap_seconds: 30
+  night_silence: {start: "23:00", end: "07:00"}
+  publish_windows:
+    - {start: "07:00", end: "09:00"}
+    - {start: "12:00", end: "14:00"}
+    - {start: "18:00", end: "22:00"}
+  # ── Phase 10：AI 生成内容声明（发布 Gate 的硬字段）──────────────────
+  # 默认"所有平台都没确认" → 只能上传草稿；无草稿通道的平台转人工。
+  # 人工确认某平台可以程序化提交 AI 声明后，把该平台设为 true（例如 douyin: true）。
+  ai_generated: true
+  ai_disclosure_confirmable: {}
+  # 国内（PostFlow）草稿参数；留空 = 不确认其草稿能力 → 草稿模式拒绝执行
+  domestic_draft_args: []
+
+engage:
+  auto_reply: true
+  max_replies_per_hour: 20
+  reply_cooldown_seconds: 60
+  escalate_keywords: ["price", "cost", "how much", "discount", "complaint", "refund",
+                      "treatment", "treat", "cure", "medical", "价格", "投诉"]
+  # Phase 10：冷却之上再叠随机安全间隔 + 重复回复检测窗口 + 连续失败熔断阈值
+  reply_jitter_seconds: 90
+  duplicate_window: 50
+  circuit_breaker_failures: 3
+
+learn:
+  # ── Phase 11：创意反馈闭环。只学本账号自己的表现，绝不写死"爆款权重" ──
+  enabled: true
+  # 80% exploitation + 20% exploration（可配，不是不可改的规则）
+  exploit_ratio: 0.8
+  # 学习窗口（天）：每条结论都要能追到这个窗口
+  window_days: 30
+  # HistoricalPerformance 在候选综合分里的权重（0 = 关闭先验）
+  history_weight: 0.25
+  # 小样本平滑伪计数 + 置信度阈值（样本不足一律 low confidence）
+  prior_n: 5.0
+  min_samples_medium: 8
+  min_samples_high: 30

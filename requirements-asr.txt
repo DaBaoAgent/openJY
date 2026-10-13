@@ -1,0 +1,3 @@
+# 本地转写（字幕时间轴）所需的重依赖 —— 只在需要跑 tools/jiuyi_finish.py 的字幕链路时安装。
+# 未安装时 health check 报 DEGRADED，主链 import 不受影响。
+faster-whisper>=1.0.0

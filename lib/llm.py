@@ -1,0 +1,190 @@
+"""DeepSeek API 接口
+
+模型名（2026-09 实测）：本账号 DeepSeek API 只认 `deepseek-flash` / `deepseek-v4-pro`
+密钥与超时统一走 lib.secrets / lib.settings（Phase 1：不再各自猜文件位置）。
+"""
+import json
+
+import httpx
+
+from .contracts import assert_contract
+from .settings import get_settings
+
+_settings = get_settings()
+DEEPSEEK_BASE_URL = _settings.llm.base_url
+DEFAULT_MODEL = _settings.llm.model
+DEFAULT_TIMEOUT = _settings.llm.timeout_seconds
+
+
+def _load_key() -> str:
+    """加载 DeepSeek API Key（env → keyring → dotenv → 兼容 keyfile）。"""
+    from .secrets import get_secret
+    return get_secret("deepseek")
+
+
+DEEPSEEK_API_KEY = _load_key()
+
+
+def chat(
+    messages: list[dict],
+    model: str = DEFAULT_MODEL,
+    temperature: float = 0.7,
+    max_tokens: int = 2000,
+    stream: bool = False,
+) -> str:
+    """调用 DeepSeek Chat API"""
+    api_key = DEEPSEEK_API_KEY or _load_key()
+    if not api_key:
+        raise ValueError("DEEPSEEK_API_KEY 未配置（见 .env.example；env/keyring/dotenv 都没有）")
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "model": model,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "stream": False,
+    }
+
+    # 直连 api.deepseek.com（trust_env=False 真正禁用环境变量代理——此前 proxy=None
+    # 仍会走 HTTPS_PROXY，代理抖动时返回空响应导致"无法解析 JSON"）
+    with httpx.Client(timeout=DEFAULT_TIMEOUT, trust_env=False) as client:
+        resp = client.post(f"{DEEPSEEK_BASE_URL}/chat/completions",
+                           headers=headers, json=payload)
+        resp.raise_for_status()
+        body = assert_contract("deepseek_chat", resp.json())
+        return body["choices"][0]["message"]["content"]
+
+
+def _extract_json(text: str) -> dict:
+    """从模型输出里抠出 JSON（去 markdown 包裹 + 截断修复）"""
+    text = text.strip()
+    # 去 markdown 代码块
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else text
+        if "```" in text:
+            text = text.rsplit("```", 1)[0]
+    text = text.strip()
+    # 直解
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    # 找最外层 {...}
+    start = text.find("{")
+    end = text.rfind("}")
+    candidate = text[start:end + 1] if (start >= 0 and end > start) else text[start:]
+
+    def _repair(s: str) -> str:
+        """修复常见截断：悬空 key / 未闭合字符串 / 未闭合括号（栈序闭合）"""
+        import re as _re
+        s = s.rstrip()
+        # 悬空 key（`"key":` 结尾）→ 删掉整个 key 段（含前面逗号）
+        s = _re.sub(r',?\s*"[^"]*"\s*:\s*$', '', s)
+        s = s.rstrip()
+        # 扫描字符串状态与括号栈
+        stack: list[str] = []
+        in_str = False
+        escaped = False
+        for ch in s:
+            if in_str:
+                if escaped:
+                    escaped = False
+                elif ch == "\\":
+                    escaped = True
+                elif ch == '"':
+                    in_str = False
+            else:
+                if ch == '"':
+                    in_str = True
+                elif ch in "[{":
+                    stack.append(ch)
+                elif ch in "]}" and stack:
+                    stack.pop()
+        # 未闭合字符串 → 补引号
+        if in_str:
+            s += '"'
+        # 悬空逗号/冒号 → 去掉
+        s = s.rstrip()
+        while s.endswith((",", ":")):
+            s = s[:-1].rstrip()
+        # 括号栈逆序闭合
+        for op in reversed(stack):
+            s += "]" if op == "[" else "}"
+        return s
+
+    for attempt in (candidate, _repair(candidate)):
+        try:
+            return json.loads(attempt)
+        except json.JSONDecodeError:
+            continue
+    raise ValueError(f"无法解析 JSON（前80字: {text[:80]}）")
+
+
+def chat_json(
+    messages: list[dict],
+    model: str = DEFAULT_MODEL,
+    temperature: float = 0.5,
+    max_tokens: int = 3000,
+    retries: int = 2,
+) -> dict:
+    """调用 API 并要求返回 JSON（截断自动重试 + 容错解析）"""
+    last_err = None
+    for attempt in range(retries + 1):
+        mt = max_tokens * (2 ** attempt)  # 每次翻倍
+        text = chat(messages, model=model, temperature=temperature, max_tokens=mt)
+        if not (text or "").strip():
+            # DeepSeek 思考模型会把预算全烧在 reasoning_content 上 → 正文为空
+            # （实测 prompt 9002 字时 reasoning 5713 字、finish_reason=length）
+            # 必须当成"可翻倍重试"的失败，否则直接判死
+            last_err = ValueError(f"响应为空：思考过程吃满 max_tokens={mt}，未输出正文")
+            if attempt < retries:
+                continue
+            break
+        try:
+            return _extract_json(text)
+        except ValueError as e:
+            last_err = e
+            if attempt < retries:
+                continue
+    raise ValueError(f"chat_json 失败（{retries + 1} 次尝试）: {last_err}")
+
+
+def _product_defaults() -> dict:
+    """产品事实的唯一来源是 config/default.yaml 的 product 段（Phase 14）。
+
+    以前这里写死了第二套默认值（品牌/产品名/卖点），与 settings 漂移时没人会发现。
+    """
+    p = get_settings().product
+    return {"brand": p.brand, "name": p.name, "keywords": list(p.keywords)}
+
+
+def generate_script(topic: str, product_info: dict, style: str = "轻快科普风") -> str:
+    """生成软广脚本（简版，完整版见 s2_copy/gen_script.py）"""
+    defaults = _product_defaults()
+    brand = product_info.get('brand') or defaults["brand"]
+    name = product_info.get('name') or defaults["name"]
+    keywords = product_info.get('keywords') or defaults["keywords"]
+    system_prompt = f"""你是一个海外短视频文案专家，擅长写来华就医服务的软广视频脚本。
+
+产品信息：
+- 品牌：{brand}
+- 产品：{name}
+- 卖点：{', '.join(keywords)}
+
+风格要求：{style}
+- 口语化，像朋友聊天
+- 自然植入产品，不硬广
+- 适合10-20秒短视频
+- 字数控制在150-300字"""
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"请根据这个热点话题写一个软广脚本：\n{topic}"},
+    ]
+
+    return chat(messages, temperature=0.8)

@@ -1,0 +1,8 @@
+# openJY 运行时依赖（与 pyproject.toml [project].dependencies 对齐）。
+# 重依赖（faster-whisper）只在需要本地转写时安装：pip install -r requirements-asr.txt
+pydantic>=2.5.0
+pyyaml>=6.0
+httpx[socks]>=0.25.0
+requests>=2.31.0
+keyring>=24.0.0
+python-dotenv>=1.0.0

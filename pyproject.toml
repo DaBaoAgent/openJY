@@ -1,0 +1,63 @@
+[project]
+name = "openjy"
+version = "0.1.0"
+description = "就医引流（China Medical Journey）西语短视频管线：本地调研/卖点/选题 → Seedance 提示词 → 字幕 + BGM 后期 → 海外发布 + 运营学习"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.5.0",
+    "pyyaml>=6.0",
+    "httpx[socks]>=0.25.0",
+    "requests>=2.31.0",
+    "keyring>=24.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+# 可选能力：缺失时 health check 报 DEGRADED，不影响主链 import
+[project.optional-dependencies]
+asr = ["faster-whisper>=1.0.0"]
+dev = ["ruff>=0.1.0", "pytest>=7.0", "pytest-asyncio>=0.23"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+exclude = [".venv", "state", "out", "video", "logs", "__pycache__", "vendor", "assets", "docs"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP", "B", "SIM", "PLW", "PIE", "C4"]
+ignore = [
+    # 容错设计：流水线单点异常要降级继续，不能全挂（逐处已评估）
+    "BLE001",
+    # try-except-pass 是有意的容错（清理/兜底路径）
+    "S110",
+    # subprocess 手动检查 returncode（业务需要读 stderr 内容，不用 check=True）
+    "PLW1510",
+    # dict()/list() 调用形式是风格偏好
+    "C408",
+    # 老式 Optional[X] 写法全仓一致，不混用 X | None
+    "RUF013",
+    # 长度由 line-length 控制；中文全角标点误报一并忽略
+    "E501",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# 测试/演示脚本允许 print；sys.path.insert(ROOT) 后再 import 是本仓库启动模式
+"tools/*.py" = ["T201", "E402"]
+"s*/run.py" = ["T201"]
+"lib/*.py" = ["E402"]
+"s5_compose/*.py" = ["E402"]
+"s6_publish/*.py" = ["E402"]
+"s7_learn/*.py" = ["E402"]
+"tests/*.py" = ["E402"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+norecursedirs = [".venv", "state", "out", "video", "logs", "vendor", "node_modules", "docs"]
+markers = [
+    "unit: fast pure-logic tests, no network, no paid calls",
+    "contract: third-party response fixtures / schema contracts",
+    "integration: multi-module flows driven by fake providers",
+    "live: needs real network/accounts (opt-in via AYHMJ_RUN_LIVE=1)",
+    "paid: spends real money on external LLM/API calls (opt-in via AYHMJ_RUN_PAID=1)",
+]
+filterwarnings = ["ignore::DeprecationWarning"]

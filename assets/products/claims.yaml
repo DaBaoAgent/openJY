@@ -1,0 +1,223 @@
+# 来华就医引流（China Medical Journey）—— Claims Registry（唯一权威机器可读事实源）
+#
+# 用途：就医引流短视频的「对外可说法」唯一来源。Script / Packaging / Engage 一律只能经
+#       lib/claims.py 读取本文件，不得在别处内置第二套说法。
+#
+# ⚠️ 医疗红线（本文件永远不许出现）：
+#   · 疗效承诺 / 治愈率 / 包治 / 保证治好（kind=medical 一律 forbidden）
+#   · 具体报价 / 折扣 / 补贴（价格只能写「参考区间，以医院报价为准」，且不落具体数字）
+#   · 绝对化用语：最好 / 第一 / 唯一 / 100% / 顶级（广告法）
+#   · 未证实的认证 / 专利 / 排名（无证书一律 needs_verification，禁止自动对外）
+#
+# 说明：本批 claims 全部为**服务/流程/资源类**描述（非参数、非疗效），故可标 verified；
+#       一旦涉及具体数字（等待天数、费用、成功率等）必须改 needs_verification 并注明材料。
+#
+# status 三态：
+#   verified           —— 有单一权威证据，可自动对外使用
+#   needs_verification —— 口径不清/缺材料，禁止自动对外使用，必须人工核对后才 available
+#   forbidden          —— 法规/合规原因禁止自动生成
+version: 1
+sku: jiuyi_medtour
+product: 来华就医引流服务（China Medical Journey）
+updated_at: "2026-10-12"
+evidence_doc: 外网来华就医爆款短视频调研与AI视频工作流落地报告-20261012.md
+
+claims:
+  - claim_id: top_hospital
+    sku: jiuyi_medtour
+    kind: positioning
+    display_text: "Care arranged at public tertiary hospitals in China"
+    spoken_text: "your care is arranged at public tertiary hospitals in China"
+    value: ""
+    unit: ""
+    evidence: "项目定位：对接昆山 + 上海正规三甲医院（报告 §0/§5）"
+    certificate: ""
+    valid_from: "2026-10-12"
+    valid_to: ""
+    allowed_channels: [script, packaging, engage, cover, subtitle]
+    risk_level: low
+    status: verified
+    numeric_tokens: []
+    forbidden_rewrites: []
+    notes: "只描述『对接公立三甲医院』这一服务事实，不承诺任何疗效或排名。"
+
+  - claim_id: english_care
+    sku: jiuyi_medtour
+    kind: service
+    display_text: "An English-speaking coordinator is with you end to end"
+    spoken_text: "an English-speaking coordinator is with you the whole way"
+    value: ""
+    unit: ""
+    evidence: "服务设计：全程英文接待与陪诊（报告 §5.5 客服漏斗/接待链路）"
+    certificate: ""
+    valid_from: "2026-10-12"
+    valid_to: ""
+    allowed_channels: [script, packaging, engage, cover, subtitle]
+    risk_level: low
+    status: verified
+    numeric_tokens: []
+    forbidden_rewrites: []
+    notes: "语言支持类服务，不构成医疗承诺。"
+
+  - claim_id: cost_transparent
+    sku: jiuyi_medtour
+    kind: service
+    display_text: "A clear cost estimate up front, with the final quote from the hospital"
+    spoken_text: "you get a clear cost estimate first, and the hospital gives the final quote"
+    value: ""
+    unit: ""
+    evidence: "报告红线：价格只能写『参考区间，以医院报价为准』"
+    certificate: ""
+    valid_from: "2026-10-12"
+    valid_to: ""
+    allowed_channels: [script, packaging, engage, cover]
+    risk_level: medium
+    status: verified
+    numeric_tokens: []
+    forbidden_rewrites: []
+    notes: "只承诺『流程透明、先给参考估算』；任何具体金额/折扣一律转人工（engage 红线）。"
+
+  - claim_id: fast_track
+    sku: jiuyi_medtour
+    kind: service
+    display_text: "Appointment and scheduling support before you fly"
+    spoken_text: "we help you book and schedule before you fly"
+    value: ""
+    unit: ""
+    evidence: "服务设计：预约与排期协助"
+    certificate: ""
+    valid_from: "2026-10-12"
+    valid_to: ""
+    allowed_channels: [script, packaging, engage, cover, subtitle]
+    risk_level: low
+    status: verified
+    numeric_tokens: []
+    forbidden_rewrites: []
+    notes: "不承诺具体等待天数（等待时间属数值承诺，需材料后才可 needs_verification→verified）。"
+
+  - claim_id: travel_logistics
+    sku: jiuyi_medtour
+    kind: service
+    display_text: "Visa, airport pickup and accommodation assistance"
+    spoken_text: "we assist with the visa, airport pickup and accommodation"
+    value: ""
+    unit: ""
+    evidence: "服务设计：签证/接送/住宿一体化协助"
+    certificate: ""
+    valid_from: "2026-10-12"
+    valid_to: ""
+    allowed_channels: [script, packaging, engage, cover]
+    risk_level: low
+    status: verified
+    numeric_tokens: []
+    forbidden_rewrites: []
+    notes: "行程协助类服务；签证结果以官方为准，不承诺出签。"
+
+  - claim_id: modern_tech
+    sku: jiuyi_medtour
+    kind: feature
+    display_text: "Modern diagnostic and surgical equipment"
+    spoken_text: "the hospitals run modern diagnostic and surgical equipment"
+    value: ""
+    unit: ""
+    evidence: "报告：国内三甲医院设备先进（泛描述，不指向具体型号/疗效）"
+    certificate: ""
+    valid_from: "2026-10-12"
+    valid_to: ""
+    allowed_channels: [script, packaging, cover]
+    risk_level: low
+    status: verified
+    numeric_tokens: []
+    forbidden_rewrites: []
+    notes: "泛描述设备先进，不承诺任何诊疗效果。"
+
+  - claim_id: recovery_env
+    sku: jiuyi_medtour
+    kind: feature
+    display_text: "Comfortable recovery wards with international patient support"
+    spoken_text: "you recover in comfortable wards with international patient support"
+    value: ""
+    unit: ""
+    evidence: "服务设计：康复环境与国际患者支持"
+    certificate: ""
+    valid_from: "2026-10-12"
+    valid_to: ""
+    allowed_channels: [script, packaging, cover]
+    risk_level: low
+    status: verified
+    numeric_tokens: []
+    forbidden_rewrites: []
+    notes: "环境/支持类描述。"
+
+  - claim_id: brand_cta
+    sku: jiuyi_medtour
+    kind: positioning
+    display_text: "China Medical Journey"
+    spoken_text: "China Medical Journey"
+    value: ""
+    unit: ""
+    evidence: "品牌名（config product.brand）"
+    certificate: ""
+    valid_from: "2026-10-12"
+    valid_to: ""
+    allowed_channels: [script, packaging, engage, cover, subtitle]
+    risk_level: low
+    status: verified
+    numeric_tokens: []
+    forbidden_rewrites: []
+    notes: "轻 CTA 只报品牌名，不报夸张承诺。"
+
+  # ── 以下为「需要材料 / 禁止」的示例登记（防止有人又把数字/疗效写进来）──
+  - claim_id: wait_time_reference
+    sku: jiuyi_medtour
+    kind: number
+    display_text: "等待时间参考区间（待核验）"
+    spoken_text: ""
+    value: ""
+    unit: ""
+    evidence: ""
+    certificate: ""
+    valid_from: "2026-10-12"
+    valid_to: ""
+    allowed_channels: []
+    risk_level: high
+    status: needs_verification
+    numeric_tokens: []
+    forbidden_rewrites: []
+    notes: "『等待几天/几周』属数值承诺，无权威材料前禁止对外；若要使用必须补材料（数据源+时间口径）。"
+
+  - claim_id: price_quote
+    sku: jiuyi_medtour
+    kind: policy
+    display_text: "具体报价/折扣"
+    spoken_text: ""
+    value: ""
+    unit: ""
+    evidence: ""
+    certificate: ""
+    valid_from: "2026-10-12"
+    valid_to: ""
+    allowed_channels: []
+    risk_level: high
+    status: forbidden
+    numeric_tokens: []
+    forbidden_rewrites: []
+    notes: "价格/优惠一律禁止自动生成，接触即转人工（engage 红线①）。"
+
+  - claim_id: cure_promise
+    sku: jiuyi_medtour
+    kind: medical
+    display_text: "疗效/治愈/包治承诺"
+    spoken_text: ""
+    value: ""
+    unit: ""
+    evidence: ""
+    certificate: ""
+    valid_from: "2026-10-12"
+    valid_to: ""
+    allowed_channels: []
+    risk_level: high
+    status: forbidden
+    numeric_tokens: []
+    forbidden_rewrites: []
+    notes: "医疗广告红线：不得承诺疗效、不得暗示治愈。"

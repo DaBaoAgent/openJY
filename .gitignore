@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.egg-info/
+.eggs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 运行状态 / 交接目录（内容不进 git；目录本身靠 .gitkeep 保留）
+state/*
+!state/.gitkeep
+out/*
+!out/.gitkeep
+video/*
+!video/.gitkeep
+logs/*
+!logs/.gitkeep
+*.log
+
+# 提示词包是生成物（可随时用 tools/jiuyi_prompts.py emit 复跑）——只保留 .gitkeep
+prompts/*
+!prompts/.gitkeep
+
+# pytest 缓存
+.pytest_cache/
+
+# 凭据（严禁进仓库）
+.env
+*.key
+secrets/
+谷歌账号.txt
+微信图片_*.jpg
+
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 临时文件
+*.tmp
